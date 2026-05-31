@@ -1,0 +1,11 @@
+services:
+  ceilingio-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ceilingio-server:latest
+    ports:
+      - "8080:8080"
+    cpus: "2.0"
+    mem_limit: 1536m
+    restart: unless-stopped
