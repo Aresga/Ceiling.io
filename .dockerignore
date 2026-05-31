@@ -1,0 +1,5 @@
+build/
+build.log
+build.exit
+.git/
+.github/
