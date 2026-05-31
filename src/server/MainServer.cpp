@@ -43,7 +43,6 @@ namespace
     }
 
     // No URL-to-bucket parsing needed when using presigned URLs.
-
     static bool downloadWithJuceUrl (const juce::String& urlText, juce::MemoryBlock& outputData, juce::String& errorMessage)
     {
         juce::URL url (urlText);
@@ -91,11 +90,8 @@ namespace
         return statusCode == 0 || (statusCode >= 200 && statusCode < 300);
     }
 
-    // AWS SDK code removed.
-
     static bool downloadInput (const juce::String& urlText, juce::MemoryBlock& outputData, juce::String& errorMessage)
     {
-        // Presigned URLs are plain HTTP(S) endpoints — use JUCE for all transfers.
         return downloadWithJuceUrl (urlText, outputData, errorMessage);
     }
 
@@ -170,8 +166,6 @@ int main (int argc, char* argv[])
 {
     juce::ScopedJuceInitialiser_GUI juceInitialiser;
 
-    // AWS SDK removed; presigned URLs only.
-
     int port = 8080;
     if (argc > 1)
         port = juce::String (argv[1]).getIntValue();
@@ -199,6 +193,14 @@ int main (int argc, char* argv[])
         response["accepted"] = true;
         return crow::response (202, response);
     });
+
+	CROW_ROUTE (app, "/health").methods (crow::HTTPMethod::Get)
+	([]()
+	{
+		crow::json::wvalue response;
+		response["status"] = "ok";
+		return crow::response (200, response);
+	});
 
     app.port (port).multithreaded().run();
     return 0;

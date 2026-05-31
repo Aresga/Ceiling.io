@@ -1,0 +1,26 @@
+services:
+  ceilingio-base-build:
+    build:
+      context: .
+      dockerfile: Dockerfile.base
+      target: build
+    image: ceilingio/base:build
+
+  ceilingio-base-runtime:
+    build:
+      context: .
+      dockerfile: Dockerfile.base
+      target: runtime
+    image: ceilingio/base:runtime
+
+  ceilingio-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    image: ceilingio-server:dev
+    depends_on:
+      - ceilingio-base-build
+      - ceilingio-base-runtime
+    ports:
+      - "8080:8080"
+    restart: always

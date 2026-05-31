@@ -1,0 +1,23 @@
+ARG BASE_BUILD_IMAGE=ceilingio/base:build
+ARG BASE_RUNTIME_IMAGE=ceilingio/base:runtime
+
+FROM ${BASE_BUILD_IMAGE} AS build
+
+WORKDIR /src/ceilingIO
+COPY . .
+
+RUN cmake -B build -DCMAKE_BUILD_TYPE=Debug \
+    -DJUCE_DIR=/opt/JUCE \
+    -DceilingIO_FETCH_SERVER_DEPS=ON
+
+RUN cmake --build build --target ceilingIOServer -j"$(nproc)"
+
+FROM ${BASE_RUNTIME_IMAGE} AS runtime
+
+WORKDIR /app
+COPY --from=build /src/ceilingIO/build/ceilingIOServer_artefacts/Debug/ceilingIOServer /usr/local/bin/ceilingIOServer
+
+EXPOSE 8080
+
+ENTRYPOINT ["/usr/local/bin/ceilingIOServer"]
+CMD ["8080"]
