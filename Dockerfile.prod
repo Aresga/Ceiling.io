@@ -1,5 +1,4 @@
 ARG BASE_BUILD_IMAGE=ceilingio/base:build
-ARG BASE_RUNTIME_IMAGE=ceilingio/base:runtime
 
 FROM ${BASE_BUILD_IMAGE} AS build
 
@@ -7,12 +6,12 @@ WORKDIR /src/ceilingIO
 COPY . .
 
 RUN cmake -B build -DCMAKE_BUILD_TYPE=Release \
-    -DJUCE_DIR=/opt/JUCE \
+    -DCMAKE_PREFIX_PATH=/opt/juce-install \
     -DceilingIO_FETCH_SERVER_DEPS=ON
 
 RUN cmake --build build --target ceilingIOServer -j"$(nproc)"
 
-FROM ${BASE_RUNTIME_IMAGE} AS runtime
+FROM ${BASE_BUILD_IMAGE} AS runtime
 
 WORKDIR /app
 COPY --from=build /src/ceilingIO/build/ceilingIOServer_artefacts/Release/ceilingIOServer /usr/local/bin/ceilingIOServer

@@ -31,14 +31,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /opt
 RUN git clone --depth 1 https://github.com/juce-framework/JUCE.git
 
-# Runtime base stage with only runtime deps
+WORKDIR /opt/JUCE
+RUN cmake -B /tmp/juce-build -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=/opt/juce-install \
+    -DJUCE_BUILD_EXTRAS=OFF \
+    -DJUCE_BUILD_EXAMPLES=OFF \
+ && cmake --build /tmp/juce-build --target install -j"$(nproc)"
+
 FROM ubuntu:24.04 AS runtime
 
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
-    libasound2 \
+    libasound2t64 \
     libcurl4 \
     libfontconfig1 \
     libfreetype6 \

@@ -199,6 +199,9 @@ int main (int argc, char* argv[])
 	{
 		crow::json::wvalue response;
 		response["status"] = "ok";
+		response["timestamp"] = juce::Time::getCurrentTime().toString (true, true).toStdString();
+		response["version"] = "1.0.0";
+		response["app"] = "ceiling.io server";
 		return crow::response (200, response);
 	});
 

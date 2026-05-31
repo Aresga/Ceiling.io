@@ -6,14 +6,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(ceilingIO_FETCH_SERVER_DEPS "Fetch Crow and Asio for the server target" OFF)
 
-# Point directly to the location you confirmed, but allow Docker and other
-# environments to override it with a cache path.
-set(JUCE_DIR "/home/ares/JUCE" CACHE PATH "Path to the JUCE source tree")
-if (NOT EXISTS "${JUCE_DIR}/CMakeLists.txt")
-    message(FATAL_ERROR "JUCE_DIR must point to a valid JUCE checkout")
+set(JUCE_DIR "" CACHE PATH "Optional path to the JUCE source tree")
+if (JUCE_DIR AND EXISTS "${JUCE_DIR}/CMakeLists.txt")
+    add_subdirectory("${JUCE_DIR}" "${CMAKE_BINARY_DIR}/JUCE" EXCLUDE_FROM_ALL)
+else()
+    find_package(JUCE CONFIG REQUIRED)
 endif()
-
-add_subdirectory("${JUCE_DIR}" "${CMAKE_BINARY_DIR}/JUCE" EXCLUDE_FROM_ALL)
 
 if (ceilingIO_FETCH_SERVER_DEPS)
     include(FetchContent)
@@ -42,48 +40,56 @@ if (ceilingIO_FETCH_SERVER_DEPS)
     # AWS SDK support removed; presigned-URL flow uses HTTP(S) via JUCE curl.
 endif()
 
-juce_add_gui_app(ceilingIO
-    PRODUCT_NAME "ceilingIO"
-    NEEDS_CURL TRUE
-    NEEDS_WEB_BROWSER FALSE
-)
+if (NOT ceilingIO_FETCH_SERVER_DEPS)
+    juce_add_gui_app(ceilingIO
+        PRODUCT_NAME "ceilingIO"
+        NEEDS_CURL TRUE
+        NEEDS_WEB_BROWSER FALSE
+    )
 
-target_compile_definitions(ceilingIO PRIVATE JUCE_WEB_BROWSER=0)
+    target_compile_definitions(ceilingIO PRIVATE JUCE_WEB_BROWSER=0)
 
-set(ceilingIO_SHARED_SOURCES
-    src/MainAudioProcessor.cpp
-    src/AnalysisWorker.cpp
-    src/ceilingIOPipeline.cpp)
+    set(ceilingIO_SHARED_SOURCES
+        src/MainAudioProcessor.cpp
+        src/AnalysisWorker.cpp
+        src/ceilingIOPipeline.cpp)
 
-target_sources(ceilingIO PRIVATE
-    ${ceilingIO_SHARED_SOURCES}
-    src/MainComponent.cpp
-    src/Main.cpp)
+    target_sources(ceilingIO PRIVATE
+        ${ceilingIO_SHARED_SOURCES}
+        src/MainComponent.cpp
+        src/Main.cpp)
 
-target_include_directories(ceilingIO PRIVATE 
-    ${CMAKE_CURRENT_SOURCE_DIR}/include
-)
+    target_include_directories(ceilingIO PRIVATE 
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+    )
 
-target_link_libraries(ceilingIO PRIVATE
-    juce::juce_audio_processors
-    juce::juce_audio_basics
-    juce::juce_audio_formats
-    juce::juce_audio_devices
-    juce::juce_audio_utils
-    juce::juce_dsp
-    juce::juce_gui_extra
-    juce::juce_gui_basics
-    juce::juce_graphics
-    juce::juce_events
-    juce::juce_data_structures
-    juce::juce_core
-)
+    target_link_libraries(ceilingIO PRIVATE
+        juce::juce_audio_processors
+        juce::juce_audio_basics
+        juce::juce_audio_formats
+        juce::juce_audio_devices
+        juce::juce_audio_utils
+        juce::juce_dsp
+        juce::juce_gui_extra
+        juce::juce_gui_basics
+        juce::juce_graphics
+        juce::juce_events
+        juce::juce_data_structures
+        juce::juce_core
+    )
 
-if (APPLE)
-    target_link_libraries(ceilingIO PRIVATE "-fobjc-arc")
+    if (APPLE)
+        target_link_libraries(ceilingIO PRIVATE "-fobjc-arc")
+    endif()
+
+    juce_generate_juce_header(ceilingIO)
+else()
+    # 💥 Explicitly define shared sources for the CLI/Server targets if the GUI target is skipped
+    set(ceilingIO_SHARED_SOURCES
+        src/MainAudioProcessor.cpp
+        src/AnalysisWorker.cpp
+        src/ceilingIOPipeline.cpp)
 endif()
-
-juce_generate_juce_header(ceilingIO)
 
 juce_add_console_app(ceilingIOCli
     PRODUCT_NAME "ceilingIO CLI"
@@ -131,11 +137,11 @@ target_link_libraries(ceilingIOServer PRIVATE
     juce::juce_audio_basics
     juce::juce_audio_formats
     juce::juce_audio_devices
-    juce::juce_audio_utils
+    # juce::juce_audio_utils
     juce::juce_dsp
-    juce::juce_gui_extra
-    juce::juce_gui_basics
-    juce::juce_graphics
+    # juce::juce_gui_extra
+    # juce::juce_gui_basics
+    # juce::juce_graphics
     juce::juce_events
     juce::juce_data_structures
     juce::juce_core)
@@ -149,9 +155,5 @@ juce_generate_juce_header(ceilingIOServer)
 if (TARGET Crow::Crow)
     target_link_libraries(ceilingIOServer PRIVATE Crow::Crow)
 endif()
-
-# AWS SDK linking removed; server uses presigned HTTP(S) URLs only.
-
-
 
 
