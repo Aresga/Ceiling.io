@@ -112,7 +112,7 @@ namespace
             + request.callbackUrl.trim();
     }
 
-    // 💥 NEW: Helper to send webhooks safely on background threads without blocking DSP
+    // NEW: Helper to send webhooks safely on background threads without blocking DSP
     static void fireWebhookNotification (const juce::String& urlString, const crow::json::wvalue& bodyPayload)
     {
         const juce::URL url (urlString);
@@ -132,7 +132,6 @@ namespace
             auto uploadUrl = url.withPOSTData (postData);
             if (auto stream = uploadUrl.createInputStream (options))
             {
-                // Webhook delivered successfully
                 juce::Logger::writeToLog ("[Webhook] Status dispatched smoothly");
             }
         }).detach();
@@ -228,7 +227,6 @@ namespace
                 updatedRecord = it->second.record;
             }
 
-            // 💥 NEW: Automatically notify NestJS webhook on every functional state jump
             crow::json::wvalue webhookBody;
             webhookBody["jobId"] = updatedRecord.jobId.toStdString();
             webhookBody["trackId"] = updatedRecord.trackId.toStdString();
@@ -311,7 +309,6 @@ namespace
                 job.status = jobStatusProcessing; job.progress = 5; job.stage = "fetch"; job.message = "Downloading input asset via presigned gateway";
             });
 
-            // 💥 FIX: Download using the secure presigned input URL directly
             juce::MemoryBlock inputData;
             const juce::URL inputUrl (request.inputUrl);
             auto downloadOptions = juce::URL::InputStreamOptions (juce::URL::ParameterHandling::inAddress)
@@ -363,7 +360,6 @@ namespace
                 job.progress = 85; job.stage = "upload"; job.message = "Uploading complete master up to storage clusters";
             });
 
-            // 💥 FIX: Upload output securely straight into the pre-authorized PUT link issued by NestJS
             const juce::URL targetUploadUrl (request.outputUrl);
             auto uploadPayloadUrl = targetUploadUrl.withPOSTData (outputData);
             int statusCode = 0;
