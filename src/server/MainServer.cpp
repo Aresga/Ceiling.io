@@ -26,9 +26,9 @@ namespace
     struct SubmitRequest
     {
         juce::String trackId;
-        juce::String inputUrl;     // 💥 CHANGED: Direct secure download URL passed by NestJS
-        juce::String outputUrl;    // 💥 CHANGED: Direct secure upload target URL passed by NestJS
-        juce::String outputKey;    // The target storage key to report back to NestJS
+        juce::String inputUrl;     // CHANGED: Direct secure download URL passed by NestJS
+        juce::String outputUrl;    // Direct secure upload target URL passed by NestJS
+        juce::String outputKey;    
         double targetLoudness = 0.0;
         juce::String callbackUrl;
         juce::String idempotencyKey;
