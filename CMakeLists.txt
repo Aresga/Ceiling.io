@@ -37,7 +37,6 @@ if (ceilingIO_FETCH_SERVER_DEPS)
 
     FetchContent_MakeAvailable(crow)
 
-    # AWS SDK support removed; presigned-URL flow uses HTTP(S) via JUCE curl.
 endif()
 
 if (NOT ceilingIO_FETCH_SERVER_DEPS)
@@ -84,7 +83,7 @@ if (NOT ceilingIO_FETCH_SERVER_DEPS)
 
     juce_generate_juce_header(ceilingIO)
 else()
-    # 💥 Explicitly define shared sources for the CLI/Server targets if the GUI target is skipped
+    # Explicitly define shared sources for the CLI/Server targets if the GUI target is skipped
     set(ceilingIO_SHARED_SOURCES
         src/MainAudioProcessor.cpp
         src/AnalysisWorker.cpp
@@ -127,10 +126,14 @@ target_compile_definitions(ceilingIOServer PRIVATE
 
 target_sources(ceilingIOServer PRIVATE
     ${ceilingIO_SHARED_SOURCES}
+    src/server/WebhookDispatcher.cpp
+    src/server/JobStore.cpp
+    src/server/MasterJob.cpp
     src/server/MainServer.cpp)
 
 target_include_directories(ceilingIOServer PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/include)
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
 
 target_link_libraries(ceilingIOServer PRIVATE
     juce::juce_audio_processors
