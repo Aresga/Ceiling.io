@@ -37,9 +37,11 @@ namespace ceilingIO
                                    float renderGainDb);
 
     bool renderReaderToMemory (juce::AudioFormatReader& reader,
-                               MainAudioProcessor& processor,
-                               juce::MemoryBlock& outputData,
-                               juce::String& errorMessage);
+                                MainAudioProcessor& processor,
+                                juce::MemoryBlock& outputData,
+                                juce::String& errorMessage,
+                                AnalysisResult* finalAnalysis = nullptr
+                            );
 
     bool renderFile (const juce::File& inputFile,
                      const juce::File& outputFile,

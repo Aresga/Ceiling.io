@@ -34,6 +34,9 @@ namespace server
                 job.inputRms = 120.0;
                 job.inputPeak = 120.0;
                 job.suggestedGainDb = 0.0;
+                job.outputLufs = -120.0;
+                job.outputRms = -120.0;
+                job.outputPeak = -120.0;
             });
             return jobHasFinished;
         };
@@ -45,7 +48,7 @@ namespace server
             job.stage = "fetch"; 
             job.message = "Downloading input asset via presigned gateway";
         });
-        JUCE::Logger::writeToLog ("[DEBUG] Job " + jobId + ": Starting fetch stage for URL: " + request.inputUrl);
+        juce::Logger::writeToLog ("[DEBUG] Job " + jobId + ": Starting fetch stage for URL: " + request.inputUrl);
 
         juce::MemoryBlock inputData;
         const juce::URL inputUrl (request.inputUrl);
@@ -67,7 +70,7 @@ namespace server
             if (inputData.getSize() == 0)
                 return fail ("fetch", "R2_DOWNLOAD_FAILED", "Downloaded input object is empty", 5);
         }
-        JUCE::Logger::writeToLog ( "[DEBUG] Job " + jobId + ": Completed fetch stage, downloaded " + juce::String (inputData.getSize()) + " bytes");
+        juce::Logger::writeToLog ( "[DEBUG] Job " + jobId + ": Completed fetch stage, downloaded " + juce::String (inputData.getSize()) + " bytes");
 
 
         // 2. Analysis Stage
@@ -76,7 +79,7 @@ namespace server
             job.stage = "analysis"; 
             job.message = "Analyzing transient vectors";
         });
-        JUCE::Logger::writeToLog ("[DEBUG] Job " + jobId + ": Starting analysis stage on downloaded audio data" + juce::String (job.progress) + "%");
+        juce::Logger::writeToLog ("[DEBUG] Job " + jobId + ": Starting analysis stage on downloaded audio data 25%");
 
         juce::AudioFormatManager formatManager;
         formatManager.registerBasicFormats();
@@ -123,12 +126,15 @@ namespace server
 
         juce::MemoryBlock outputData;
         juce::String dspError;
-        if (! ceilingIO::renderReaderToMemory (*renderReader, processor, outputData, dspError))
+        ceilingIO::AnalysisResult finalAnalysis;
+        if (! ceilingIO::renderReaderToMemory (*renderReader, processor, outputData, dspError, &finalAnalysis))
             return fail ("render", "DSP_RENDER_FAILED", dspError.isNotEmpty() ? dspError : "DSP math pipeline failure", 60);
 
         // 4. Upload Stage
-        store.updateAndNotify (jobId, [] (JobRecord& job) {
-            job.progress = 85; job.stage = "upload"; job.message = "Uploading complete master up to storage clusters";
+        store.updateAndNotify (jobId, [&] (JobRecord& job) {
+            job.progress = 85;
+            job.stage = "upload"; 
+            job.message = "Uploading complete master up to storage clusters";
         });
 
         const juce::URL targetUploadUrl (request.outputUrl);
@@ -147,7 +153,14 @@ namespace server
         // 5. Complete Stage
         const auto elapsed = static_cast<long long>(juce::roundToInt (juce::Time::getMillisecondCounterHiRes() - startedAt));
         store.updateAndNotify (jobId, [&] (JobRecord& job) {
-            job.status = jobStatusCompleted; job.progress = 100; job.stage = "render"; job.message = "Mastering completed successfully"; job.processingTimeMs = elapsed;
+            job.status = jobStatusCompleted; 
+            job.progress = 100; 
+            job.stage = "finalize"; 
+            job.message = "Mastering completed successfully"; 
+            job.processingTimeMs = elapsed;
+            job.outputLufs = finalAnalysis.lufsDb;
+            job.outputRms = finalAnalysis.rmsDb;
+            job.outputPeak = finalAnalysis.peakDb;
         });
 
         return jobHasFinished;

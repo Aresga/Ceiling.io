@@ -73,6 +73,13 @@ namespace server
             webhookBody["inputPeak"] = updatedRecord.inputPeak;
             webhookBody["suggestedGainDb"] = updatedRecord.suggestedGainDb;
         }
+
+        if (updatedRecord.progress >= 100)
+        {
+            webhookBody["outputLufs"] = updatedRecord.outputLufs;
+            webhookBody["outputRms"] = updatedRecord.outputRms;
+            webhookBody["outputPeak"] = updatedRecord.outputPeak;
+        }
         
         if (updatedRecord.status == jobStatusCompleted) {
             webhookBody["processedKey"] = updatedRecord.outputKey.toStdString();

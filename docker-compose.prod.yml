@@ -1,4 +1,3 @@
-version: "3.8"
 services:
   ceilingio-base-build:
     build:
@@ -25,3 +24,13 @@ services:
     ports:
       - "8080:8080"
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 2G
+    
+networks:
+  default:
+    name: mastering_webapp_network
+    external: true

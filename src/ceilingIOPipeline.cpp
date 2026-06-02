@@ -141,7 +141,9 @@ namespace ceilingIO
     bool renderReaderToMemory (juce::AudioFormatReader& reader,
                                MainAudioProcessor& processor,
                                juce::MemoryBlock& outputData,
-                               juce::String& errorMessage)
+                               juce::String& errorMessage,
+                               AnalysisResult* finalAnalysis
+                            )
     {
         outputData.reset();
 
@@ -179,7 +181,28 @@ namespace ceilingIO
             samplesRead += samplesThisIter;
         }
 
+        writer.reset();
+
         processor.releaseResources();
+
+        if (finalAnalysis != nullptr) {
+            juce::WavAudioFormat wav;
+            std::unique_ptr<juce::MemoryInputStream> outStream (new juce::MemoryInputStream (outputData, false)); // false = zero copy
+            std::unique_ptr<juce::AudioFormatReader> outputReader (wav.createReaderFor (outStream.release(), true));
+
+            if (outputReader != nullptr)
+            {
+                *finalAnalysis = analyseReader (*outputReader, 2);
+            }
+        }
+
+
+        // std::unique_ptr<juce::MemoryInputStream> outStream (new juce::MemoryInputStream (outputData, false));
+        // std::unique_ptr<juce::AudioFormatReader> outputReader (wav.createReaderFor (outStream.release(), true));
+
+        // if (outputReader != nullptr) {
+        //     AnalysisResult finalStats = analyseReader (*outputReader, 2);
+        // }
         return true;
     }
 

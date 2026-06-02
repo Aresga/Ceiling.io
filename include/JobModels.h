@@ -46,6 +46,9 @@ namespace server
         double inputRms = 120.0;
         double inputPeak = 120.0;
         double suggestedGainDb = 0.0;
+        double outputLufs = -120.0;
+        double outputRms = -120.0;
+        double outputPeak = -120.0;
         juce::String updatedAt;
         juce::String createdAt;
     };
