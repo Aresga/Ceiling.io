@@ -11,19 +11,21 @@ namespace
     constexpr float kLufsOffset = -0.691f;
     constexpr float kAbsoluteGateLufs = -70.0f;
 
+    // Takes raw audio and convert it into a dicibel value in LUFS, EBU R128
     inline float meanSquareToLufs (double meanSquare)
     {
         if (! std::isfinite (meanSquare) || meanSquare <= 1.0e-12)
             return -120.0f;
         return kLufsOffset + 10.0f * std::log10 ((float) meanSquare);
     }
-
+    // Does the opposite of meanSquareToLufs, converting a LUFS value back to a linear mean square value
     inline double lufsToMeanSquare (float lufs)
     {
         return std::pow (10.0, (lufs - kLufsOffset) / 10.0f);
     }
 }
 
+// constructor : init APVTS , set up sterio buses in/out 
 MainAudioProcessor::MainAudioProcessor()
  : AudioProcessor (BusesProperties()
         .withInput  ("Input",  juce::AudioChannelSet::stereo(), true)
@@ -35,6 +37,9 @@ MainAudioProcessor::MainAudioProcessor()
 
 MainAudioProcessor::~MainAudioProcessor() = default;
 
+// Allocates RAM and sets up all your digital tools, 
+// High pass filter, EQ, comp, limiter, 5ms look-ahead buffer
+// right before audio processing happens 
 void MainAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     juce::ignoreUnused (sampleRate, samplesPerBlock);
@@ -92,16 +97,18 @@ void MainAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     loudnessAnalyzer.prepare (sampleRate, samplesPerBlock, (int) spec.numChannels);
 }
 
+// Clean up RAM, resources .. 
 void MainAudioProcessor::releaseResources() {}
 
+// Guard against unsupported channel conf such mono 
 bool MainAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
-    // Only support stereo in/out for now
     auto in = layouts.getChannelSet (true, 0);
     auto out = layouts.getChannelSet (false, 0);
     return in == out && (in == juce::AudioChannelSet::stereo());
 }
 
+// process the audio block by block, apply the DSP chain : HPF, EQ, Comp, Limiter
 void MainAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     juce::ignoreUnused (midiMessages);
@@ -267,6 +274,8 @@ void MainAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::M
 
     loudnessAnalyzer.process (buffer);
 }
+
+
 
 void MainAudioProcessor::LoudnessAnalyzer::prepare (double newSampleRate, int samplesPerBlock, int channels)
 {
@@ -509,9 +518,11 @@ void MainAudioProcessor::LoudnessAnalyzer::process (const juce::AudioBuffer<floa
     }
 }
 
-juce::AudioProcessorEditor* MainAudioProcessor::createEditor() { return nullptr; }
-bool MainAudioProcessor::hasEditor() const { return false; }
 
+
+juce::AudioProcessorEditor* MainAudioProcessor::createEditor() { return nullptr; }
+
+bool MainAudioProcessor::hasEditor() const { return false; }
 const juce::String MainAudioProcessor::getName() const { return "ceilingIO"; }
 double MainAudioProcessor::getTailLengthSeconds() const { return 0.0; }
 

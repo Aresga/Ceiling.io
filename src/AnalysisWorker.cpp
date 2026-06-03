@@ -2,9 +2,9 @@
 
 void AnalysisWorker::analyzeFile (const juce::File& audioFile, int intensity, std::function<void()> onComplete)
 {
-    // Launch background thread to avoid blocking caller/UI.
+    // Launch background thread avoid blocking caller/UI.
     if (isRunning.load())
-        return; // already running
+        return ; // already running
 
     isRunning.store (true);
 
@@ -18,7 +18,7 @@ void AnalysisWorker::analyzeFile (const juce::File& audioFile, int intensity, st
             isRunning.store (false);
             if (onComplete)
                 juce::MessageManager::callAsync (onComplete);
-            return; // failed to open
+            return ; // failed to open
         }
 
         const int numChannels = (int) reader->numChannels;
