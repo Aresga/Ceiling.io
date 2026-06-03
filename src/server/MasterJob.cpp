@@ -91,6 +91,21 @@ namespace server
             return fail ("analysis", "AUDIO_READ_FAILED", "Unable to open input format channels", 25);
 
         const auto analysis = ceilingIO::analyseReader (*reader, 2);
+
+        const ceilingIO::PlatformPreset* platformPtr = ceilingIO::findPreset (request.platform);
+        const ceilingIO::GenrePreset* genrePtr = ceilingIO::findGenrePreset (request.genre);
+
+        // Fallback Strategy: If platform is "none" or custom, construct a transient platform preset wrapper
+        ceilingIO::PlatformPreset fallbackPreset;
+        if (platformPtr == nullptr)
+        {
+            fallbackPreset.name = "custom";
+            fallbackPreset.label = "Custom Target";
+            fallbackPreset.targetLufs = static_cast<float> (request.targetLoudness);
+            fallbackPreset.maxTruePeakDbtp = -1.0f;
+            platformPtr = &fallbackPreset;
+        }
+
         const float renderGainDb = static_cast<float> (request.targetLoudness) - analysis.lufsDb;
 
         
@@ -111,7 +126,7 @@ namespace server
         serverPreset.maxTruePeakDbtp = -1.0f;
         
         MainAudioProcessor processor;
-        ceilingIO::applyAnalysisToProcessor (processor, analysis, &serverPreset, renderGainDb);
+        ceilingIO::applyAnalysisToProcessor (processor, analysis, &serverPreset, genrePtr, renderGainDb);
 
         // 3. Render Stage
         store.updateAndNotify (jobId, [] (JobRecord& job) {

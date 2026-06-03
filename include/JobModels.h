@@ -25,6 +25,9 @@ namespace server
         double targetLoudness = 0.0;
         juce::String callbackUrl;
         juce::String idempotencyKey;
+
+        juce::String platform;
+        juce::String genre;
     };
 
     struct JobRecord
@@ -49,6 +52,10 @@ namespace server
         double outputLufs = -120.0;
         double outputRms = -120.0;
         double outputPeak = -120.0;
+
+        juce::String platform;
+        juce::String genre;
+
         juce::String updatedAt;
         juce::String createdAt;
     };
@@ -86,7 +93,9 @@ namespace server
             + request.inputUrl.trim() + "\n"
             + request.outputUrl.trim() + "\n"
             + juce::String (request.targetLoudness, 6) + "\n"
-            + request.callbackUrl.trim();
+            + request.callbackUrl.trim() + "\n"
+            + request.platform.trim() + "\n"
+            + request.genre.trim();
     }
 
     // Parses and validates the incoming JSON safely
@@ -141,6 +150,14 @@ namespace server
             return std::nullopt;
         }
         request.targetLoudness = object->getProperty ("targetLoudness").toString().getDoubleValue();
+
+        request.platform = object->hasProperty ("platform") ? object->getProperty ("platform").toString().trim() : "none";
+        request.genre = object->hasProperty("genre") ? object->getProperty ("genre").toString().trim() : "acoustic";
+
+        if (request.platform.length() > maxFieldLength || request.genre.length() > maxFieldLength) {
+            errorMessage = "Configuration payload strings exceed safe buffer bounds.";
+            return std::nullopt;
+        }
 
         return request;
     }

@@ -7,6 +7,17 @@
 
 namespace ceilingIO
 {
+    struct GenrePreset {
+        juce::String id;
+        juce::String displayName;
+        float baseLowShelfDb;
+        float baseMidPeakDb;
+        float baseHighShelfDb;
+        float compRatio;
+        float compAttackMs;
+        float compReleaseMs;
+    };
+
     struct PlatformPreset
     {
         juce::String name;
@@ -27,6 +38,8 @@ namespace ceilingIO
     const std::array<PlatformPreset, 5>& getPlatformPresets() noexcept;
     const PlatformPreset* findPreset (const juce::String& name) noexcept;
 
+    const GenrePreset* findGenrePreset (const juce::String& name) noexcept;
+
     AnalysisResult analyseReader (juce::AudioFormatReader& reader, int intensity);
     AnalysisResult analyseFile (const juce::File& audioFile, int intensity);
 
@@ -34,6 +47,7 @@ namespace ceilingIO
     void applyAnalysisToProcessor (MainAudioProcessor& processor,
                                    const AnalysisResult& analysis,
                                    const PlatformPreset* preset,
+                                   const GenrePreset* genre,
                                    float renderGainDb);
 
     bool renderReaderToMemory (juce::AudioFormatReader& reader,

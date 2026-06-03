@@ -31,6 +31,9 @@ namespace server
         response["progress"] = job.progress;
         response["stage"] = job.stage.toStdString();
         response["message"] = job.message.toStdString();
+
+        response["platform"] = job.platform.toStdString();
+        response["genre"] = job.genre.toStdString();
         
         response["outputKey"] = job.outputKey.isNotEmpty() ? job.outputKey.toStdString() : crow::json::wvalue();
         

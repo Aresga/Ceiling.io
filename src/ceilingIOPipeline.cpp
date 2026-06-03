@@ -15,6 +15,32 @@ namespace ceilingIO
             { "youtube", "YouTube", -14.0f, -1.0f },
             { "tidal", "Tidal", -14.0f, -1.0f }
         }};
+
+        const std::array<GenrePreset, 3> genrePresets {{
+            {
+                "electronic", "Electronic / Club",
+                1.5f, -0.5f, 0.8f, // Basse bump, mid cleanup, crisp high 
+                3.5f, 15.0f, 80.0 // tight ratio, fast attack for punchy transients 
+            },
+            { 
+                "acoustic", "Acoustic / Transparent", 
+                0.0f, 0.0f, 1.2f,    // Linear low/mid, gentle high "air" touch
+                1.5f, 40.0f, 250.0f  // Low transparent ratio, slow smooth dynamic recovery
+            },
+            { 
+                "pop", "Modern Pop", 
+                0.8f, 1.0f, 0.5f,    // Solid weight, vocal presence lift at 1kHz
+                2.2f, 25.0f, 140.0f  // Balanced glue control compression profiles
+            }
+        }};
+    }
+
+    const GenrePreset* findGenrePreset (const juce::String& name) noexcept {
+        const auto normalized = name.trim().toLowerCase();
+        for (const auto& preset : genrePresets)
+            if (preset.id == normalized)
+                return &preset;
+        return nullptr;
     }
 
     const std::array<PlatformPreset, 5>& getPlatformPresets() noexcept
@@ -118,23 +144,69 @@ namespace ceilingIO
 
     void applyAnalysisToProcessor (MainAudioProcessor& processor,
                                    const AnalysisResult& analysis,
-                                   const PlatformPreset* preset,
+                                   const PlatformPreset* platform,
+                                   const GenrePreset* genre,
                                    float renderGainDb)
     {
-        const bool presetActive = (preset != nullptr);
+        // 1. Calculate the Protection Factor (1.0 = Full Processing, 0.0 = Pure Bypass)
+        float protectionFactor = 1.0f;
 
-        processor.setLimiterCeilingDbtp (presetActive ? preset->maxTruePeakDbtp : -1.0f);
-
-        if (auto* threshold = dynamic_cast<juce::AudioParameterFloat*> (processor.apvts.getParameter ("COMP_THRESHOLD")))
+        // If the input file is already louder than -18 LUFS, it is heavily compressed.
+        if (analysis.lufsDb > -18.0f)
         {
-            const float thresholdDb = presetActive ? -18.0f : analysis.suggestedThresholdDb;
-            threshold->setValueNotifyingHost (threshold->convertTo0to1 (thresholdDb));
+            // Smoothly scale down processing. At -12 LUFS, processing drops to absolute 0.
+            protectionFactor = juce::jmap (analysis.lufsDb, -18.0f, -12.0f, 1.0f, 0.0f);
+            protectionFactor = juce::jlimit (0.0f, 1.0f, protectionFactor);
         }
 
+        // 2. Lock down True Peak safety boundaries from the platform rule
+        const float ceiling = (platform != nullptr) ? platform->maxTruePeakDbtp : -1.0f;
+        processor.setLimiterCeilingDbtp (ceiling);
+
+        // 3. Apply Scaled Equalizer Curves
+        if (genre != nullptr)
+        {
+            // The EQ choices are multiplied by our protection factor so loud tracks stay flat
+            float finalLow = genre->baseLowShelfDb * protectionFactor;
+            float finalMid = genre->baseMidPeakDb * protectionFactor;
+            float finalHigh = genre->baseHighShelfDb * protectionFactor;
+
+            if (auto* lo = dynamic_cast<juce::AudioParameterFloat*> (processor.apvts.getParameter ("EQ_LO_GAIN")))
+                lo->setValueNotifyingHost (lo->convertTo0to1 (finalLow));
+
+            if (auto* mid = dynamic_cast<juce::AudioParameterFloat*> (processor.apvts.getParameter ("EQ_MID_GAIN")))
+                mid->setValueNotifyingHost (mid->convertTo0to1 (finalMid));
+
+            if (auto* hi = dynamic_cast<juce::AudioParameterFloat*> (processor.apvts.getParameter ("EQ_HI_GAIN")))
+                hi->setValueNotifyingHost (hi->convertTo0to1 (finalHigh));
+        }
+
+        // 4. Relax Compressor Glue Settings for Loud Tracks
+        if (auto* ratio = dynamic_cast<juce::AudioParameterFloat*> (processor.apvts.getParameter ("COMP_RATIO")))
+        {
+            // If protected, drop the compression ratio back down toward a transparent 1.0 (no effect)
+            float baseRatio = (genre != nullptr) ? genre->compRatio : 2.0f;
+            float finalRatio = juce::jmap (protectionFactor, 0.0f, 1.0f, 1.0f, baseRatio);
+            ratio->setValueNotifyingHost (ratio->convertTo0to1 (finalRatio));
+        }
+
+        // Keep your existing timings setup
+        if (auto* attack = dynamic_cast<juce::AudioParameterFloat*> (processor.apvts.getParameter ("COMP_ATTACK")))
+            attack->setValueNotifyingHost (attack->convertTo0to1 (genre ? genre->compAttackMs : 10.0f));
+
+        if (auto* release = dynamic_cast<juce::AudioParameterFloat*> (processor.apvts.getParameter ("COMP_RELEASE")))
+            release->setValueNotifyingHost (release->convertTo0to1 (genre ? genre->compReleaseMs : 100.0f));
+
+        // 5. Intelligent Limiter Volume Adjustments
         if (auto* drive = dynamic_cast<juce::AudioParameterFloat*> (processor.apvts.getParameter ("LIMITER_DRIVE")))
         {
-            const float driveDb = presetActive ? renderGainDb : analysis.suggestedDriveDb;
-            drive->setValueNotifyingHost (drive->convertTo0to1 (driveDb));
+            float targetLufs = (platform != nullptr) ? platform->targetLufs : -14.0f;
+            float platformGainDb = targetLufs - analysis.lufsDb;
+            
+            // If the track is already louder than the platform target, gain becomes 0.0dB.
+            // It will not push the track any harder, acting only as a safety ceiling shield.
+            float drivenGain = juce::jlimit (0.0f, 12.0f, platformGainDb);
+            drive->setValueNotifyingHost (drive->convertTo0to1 (drivenGain));
         }
     }
 

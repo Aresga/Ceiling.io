@@ -34,6 +34,9 @@ namespace server
         record.callbackUrl = request.callbackUrl.trim();
         record.idempotencyKey = request.idempotencyKey.trim();
         record.targetLoudness = request.targetLoudness;
+        record.platform = request.platform.isEmpty() ? "none" : request.platform;
+        record.genre = request.genre.isEmpty() ? "acoustic" : request.genre;
+
         record.updatedAt = currentIsoTimestamp();
         record.createdAt = record.updatedAt;
 
