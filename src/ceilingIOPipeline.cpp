@@ -16,21 +16,38 @@ namespace ceilingIO
             { "tidal", "Tidal", -14.0f, -1.0f }
         }};
 
-        const std::array<GenrePreset, 3> genrePresets {{
+        // Preset Control Matrix Blueprint:
+        // { 
+        //     "id", "Display Name", 
+        //      LowGain(dB), MidGain(dB), HighGain(dB), 
+        //      Ratio(:1), Attack(ms), Release(ms) 
+        // }
+       // 🌟 Fixed size from 3 to 5 to avoid compilation crash
+        const std::array<GenrePreset, 5> genrePresets {{
             {
                 "electronic", "Electronic / Club",
-                1.5f, -0.5f, 0.8f, // Basse bump, mid cleanup, crisp high 
-                3.5f, 15.0f, 80.0 // tight ratio, fast attack for punchy transients 
+                1.5f, -0.5f, 0.8f, 
+                3.5f, 15.0f, 80.0f 
             },
             { 
                 "acoustic", "Acoustic / Transparent", 
-                0.0f, 0.0f, 1.2f,    // Linear low/mid, gentle high "air" touch
-                1.5f, 40.0f, 250.0f  // Low transparent ratio, slow smooth dynamic recovery
+                0.0f, 0.0f, 1.2f,    
+                1.5f, 40.0f, 250.0f  
             },
             { 
                 "pop", "Modern Pop", 
-                0.8f, 1.0f, 0.5f,    // Solid weight, vocal presence lift at 1kHz
-                2.2f, 25.0f, 140.0f  // Balanced glue control compression profiles
+                0.8f, 1.0f, 0.5f,    
+                2.2f, 25.0f, 140.0f  
+            },
+            {
+                "rock", "Rock / Aggressive", 
+                1.2f, 0.0f, 0.7f,    
+                3.0f, 10.0f, 100.0f 
+            },
+            {
+                "hip-hop", "Hip-Hop / Bass-Heavy",
+                2.0f, -1.0f, 0.5f,   
+                4.0f, 20.0f, 150.0f 
             }
         }};
     }

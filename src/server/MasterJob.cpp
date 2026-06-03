@@ -92,8 +92,13 @@ namespace server
 
         const auto analysis = ceilingIO::analyseReader (*reader, 2);
 
+
         const ceilingIO::PlatformPreset* platformPtr = ceilingIO::findPreset (request.platform);
         const ceilingIO::GenrePreset* genrePtr = ceilingIO::findGenrePreset (request.genre);
+
+        // If lowGain is +2.0dB, this pulls the initial input volume down by -1.0dB to protect the ceiling
+        const float presetLowBump = (genrePtr != nullptr) ? genrePtr->baseLowShelfDb : 0.0f;
+        const float dynamicHeadroomPad = (presetLowBump > 0.0f) ? -(presetLowBump * 0.5f) : 0.0f;
 
         // Fallback Strategy: If platform is "none" or custom, construct a transient platform preset wrapper
         ceilingIO::PlatformPreset fallbackPreset;
@@ -106,7 +111,10 @@ namespace server
             platformPtr = &fallbackPreset;
         }
 
-        const float renderGainDb = static_cast<float> (request.targetLoudness) - analysis.lufsDb;
+        // const ceilingIO::PlatformPreset* platformPtr = ceilingIO::findPreset (request.platform);
+        // const ceilingIO::GenrePreset* genrePtr = ceilingIO::findGenrePreset (request.genre);
+        const float renderGainDb = (platformPtr->targetLufs - analysis.lufsDb) + dynamicHeadroomPad;
+        // const float renderGainDb = static_cast<float> (request.targetLoudness) - analysis.lufsDb;
 
         
         store.updateAndNotify (jobId, [&] (JobRecord& job) {
