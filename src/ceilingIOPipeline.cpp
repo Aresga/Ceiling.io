@@ -222,8 +222,12 @@ namespace ceilingIO
             
             // If the track is already louder than the platform target, gain becomes 0.0dB.
             // It will not push the track any harder, acting only as a safety ceiling shield.
-            float drivenGain = juce::jlimit (0.0f, 12.0f, platformGainDb);
-            drive->setValueNotifyingHost (drive->convertTo0to1 (drivenGain));
+
+            float drivenGain = juce::jlimit(-12.0f, 12.0f, renderGainDb);
+            drive->setValueNotifyingHost(drive->convertTo0to1(drivenGain));
+
+            // float drivenGain = juce::jlimit (0.0f, 12.0f, platformGainDb);
+            // drive->setValueNotifyingHost (drive->convertTo0to1 (drivenGain));
         }
     }
 
