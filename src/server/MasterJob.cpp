@@ -66,35 +66,14 @@ namespace server
             fallbackPreset.targetLufs      = static_cast<float> (request.targetLoudness);
             fallbackPreset.maxTruePeakDbtp = -1.0f;
             platformPtr = &fallbackPreset;
-        }
-
-        // Scale down EQ/comp aggressiveness for tracks already louder than -18 LUFS.
-        // At -12 LUFS protectionFactor reaches 0.0 — all processing is bypassed.
-        // float protectionFactor = 1.0f;
-        // if (analysis.lufsDb > -18.0f)
-        // {
-        //     protectionFactor = juce::jmap  (analysis.lufsDb, -18.0f, -12.0f, 1.0f, 0.0f);
-        //     protectionFactor = juce::jlimit (0.0f, 1.0f, protectionFactor);
-        // } 
-        // // for quite tracks below -18 LUFS, we can actually allow a bit more aggressive processing to hit the target loudness.
-        // else if (analysis.lufsDb < -24.0f)
-        // {   
-        //     protectionFactor = juce::jmap  (analysis.lufsDb, -24.0f, -18.0f, 1.25f, 1.0f);
-        //     protectionFactor = juce::jlimit (1.0f, 1.25f, protectionFactor);
-        // }   
+        }  
 
         // Only compensate headroom for the low shelf boost that will actually fire.
         // If protectionFactor is 0 the EQ won't boost, so the pad stays at 0.
         const float effectiveLowBump   = (genrePtr != nullptr) ? genrePtr->baseLowShelfDb : 0.0f;
         const float dynamicHeadroomPad = (effectiveLowBump > 0.0f) ? -(effectiveLowBump * 0.5f) : 0.0f;
 
-        // How much gain can we apply before peaks hit the ceiling
-        const float peakHeadroom   = (platformPtr->maxTruePeakDbtp - analysis.peakDb);  // e.g. -1.0 - (-7.7) = 6.7 dB
-        const float gainByLufs     = platformPtr->targetLufs - analysis.lufsDb;         // e.g. +10.5 dB
-        const float gainByPeak     = peakHeadroom;                                       // e.g. +6.7 dB
-
-        // Use whichever is smaller — don't push harder than the peaks allow
-        renderGainDb   = juce::jmin (gainByLufs, gainByPeak) + dynamicHeadroomPad;
+        renderGainDb = (platformPtr->targetLufs - analysis.lufsDb) + dynamicHeadroomPad;
 
 
         // renderGainDb = (platformPtr->targetLufs - analysis.lufsDb) + dynamicHeadroomPad;

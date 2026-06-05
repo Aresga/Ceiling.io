@@ -594,7 +594,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout MainAudioProcessor::createPa
     params.push_back (std::make_unique<Parameter> ("COMP_RELEASE",   "Comp Release",   juce::NormalisableRange<float>(10.0f, 1000.0f), 100.0f));
 
     // Limiter drive
-    params.push_back (std::make_unique<Parameter> ("LIMITER_DRIVE",  "Limiter Drive",  juce::NormalisableRange<float>(-12.0f, 12.0f), 0.0f));
+    params.push_back (std::make_unique<Parameter> ("LIMITER_DRIVE",  "Limiter Drive",  juce::NormalisableRange<float>(0.0f, 18.0f), 0.0f));
 
     return { params.begin(), params.end() };
 }
