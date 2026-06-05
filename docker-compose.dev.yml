@@ -12,6 +12,8 @@ services:
       dockerfile: Dockerfile.base
       target: runtime
     image: ceilingio/base:runtime
+    depends_on:
+      - ceilingio-base-build
 
   ceilingio-server:
     build:
