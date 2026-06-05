@@ -135,6 +135,7 @@ target_include_directories(ceilingIOServer PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
+
 target_link_libraries(ceilingIOServer PRIVATE
     juce::juce_audio_processors
     juce::juce_audio_basics
@@ -147,7 +148,9 @@ target_link_libraries(ceilingIOServer PRIVATE
     # juce::juce_graphics
     juce::juce_events
     juce::juce_data_structures
-    juce::juce_core)
+    juce::juce_core
+    mp3lame
+)
 
 if (APPLE)
     target_link_libraries(ceilingIOServer PRIVATE "-fobjc-arc")

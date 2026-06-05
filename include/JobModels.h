@@ -25,7 +25,7 @@ namespace server
         double targetLoudness = 0.0;
         juce::String callbackUrl;
         juce::String idempotencyKey;
-
+        juce::String outputFormat = "WAV";
         juce::String platform;
         juce::String genre;
     };
@@ -95,7 +95,9 @@ namespace server
             + juce::String (request.targetLoudness, 6) + "\n"
             + request.callbackUrl.trim() + "\n"
             + request.platform.trim() + "\n"
-            + request.genre.trim();
+            + request.genre.trim() + "\n"
+            + request.outputFormat.trim();
+
     }
 
     // Parses and validates the incoming JSON safely
@@ -143,18 +145,25 @@ namespace server
         auto outputKey = readRequiredString ("outputKey"); if (!outputKey) return std::nullopt; request.outputKey = *outputKey;
         auto callbackUrl = readRequiredString ("callbackUrl"); if (!callbackUrl) return std::nullopt; request.callbackUrl = *callbackUrl;
         auto idempotencyKey = readRequiredString ("idempotencyKey"); if (!idempotencyKey) return std::nullopt; request.idempotencyKey = *idempotencyKey;
+        
+        auto outputFormat = readRequiredString ("outputFormat"); if (!outputFormat) return std::nullopt; request.outputFormat = *outputFormat;
+        juce::Logger::writeToLog ("[Info]: Requested output format: " + request.outputFormat);
 
         if (! object->hasProperty ("targetLoudness"))
         {
+            juce::Logger::writeToLog ("[Warning]: Missing targetLoudness in request, defaulting to 0.0 LUFS");
             errorMessage = "Missing targetLoudness";
             return std::nullopt;
         }
         request.targetLoudness = object->getProperty ("targetLoudness").toString().getDoubleValue();
 
         request.platform = object->hasProperty ("platform") ? object->getProperty ("platform").toString().trim() : "none";
+        juce::Logger::writeToLog ("[Info]: Using platform: " + request.platform);
         request.genre = object->hasProperty("genre") ? object->getProperty ("genre").toString().trim() : "acoustic";
+        juce::Logger::writeToLog ("[Info]: Using genre: " + request.genre);
 
         if (request.platform.length() > maxFieldLength || request.genre.length() > maxFieldLength) {
+            juce::Logger::writeToLog ("[Warning]: Platform or genre field exceeds maximum safe length");
             errorMessage = "Configuration payload strings exceed safe buffer bounds.";
             return std::nullopt;
         }

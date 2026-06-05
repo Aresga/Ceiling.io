@@ -121,7 +121,7 @@ int main (int argc, char* argv[])
         }
     });
 
-    // GET: Liveness / Health check probe
+    // GET: Health check
     CROW_ROUTE (app, "/health").methods (crow::HTTPMethod::Get)
     ([]() {
         crow::json::wvalue response;

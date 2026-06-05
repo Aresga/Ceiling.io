@@ -6,6 +6,13 @@
 
 namespace server
 {
+    struct StageResult
+    {
+        bool        ok;
+        juce::String errorCode;
+        juce::String errorMessage;
+    };
+    
     class MasterJob final : public juce::ThreadPoolJob
     {
     public:

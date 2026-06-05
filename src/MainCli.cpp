@@ -44,7 +44,7 @@ namespace
         { "tidal", "Tidal", -14.0f, -1.0f }
     }};
 
-    const PlatformPreset* findPreset (const juce::String& name)
+    const PlatformPreset* findPlatformPreset (const juce::String& name)
     {
         const auto normalized = name.trim().toLowerCase();
 
@@ -414,7 +414,7 @@ int main (int argc, char* argv[])
     const PlatformPreset* preset = nullptr;
     if (options.presetName.isNotEmpty())
     {
-        preset = findPreset (options.presetName);
+        preset = findPlatformPreset (options.presetName);
         if (preset == nullptr)
         {
             std::cerr << "Unknown preset: " << options.presetName << "\n";

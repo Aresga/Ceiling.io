@@ -2,6 +2,8 @@ ARG BASE_BUILD_IMAGE=ceilingio/base:build
 
 FROM ${BASE_BUILD_IMAGE} AS build
 
+RUN apt-get update && apt-get install libmp3lame-dev -y
+
 WORKDIR /src/ceilingIO
 COPY . .
 

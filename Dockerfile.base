@@ -49,4 +49,5 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libfontconfig1 \
     libfreetype6 \
     libssl3 \
+    libmp3lame-dev \
  && rm -rf /var/lib/apt/lists/*

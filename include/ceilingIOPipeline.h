@@ -36,7 +36,7 @@ namespace ceilingIO
     };
 
     const std::array<PlatformPreset, 5>& getPlatformPresets() noexcept;
-    const PlatformPreset* findPreset (const juce::String& name) noexcept;
+    const PlatformPreset* findPlatformPreset (const juce::String& name) noexcept;
 
     const GenrePreset* findGenrePreset (const juce::String& name) noexcept;
 
@@ -49,6 +49,8 @@ namespace ceilingIO
                                    const PlatformPreset* preset,
                                    const GenrePreset* genre,
                                    float renderGainDb);
+                
+    bool encodeWavToMp3 (const juce::MemoryBlock& wavData, juce::MemoryBlock& mp3Data);
 
     bool renderReaderToMemory (juce::AudioFormatReader& reader,
                                 MainAudioProcessor& processor,
