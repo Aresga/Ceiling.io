@@ -1,0 +1,24 @@
+ARG BASE_BUILD_IMAGE=udbax/ceilingio-base:build
+
+FROM ${BASE_BUILD_IMAGE} AS build
+
+RUN apt-get update && apt-get install libmp3lame-dev -y
+
+WORKDIR /src/ceilingIO
+COPY . .
+
+RUN cmake -B build -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_PREFIX_PATH=/opt/juce-install \
+    -DceilingIO_FETCH_SERVER_DEPS=ON
+
+RUN cmake --build build --target ceilingIOServer -j"$(nproc)"
+
+FROM ${BASE_BUILD_IMAGE} AS runtime
+
+WORKDIR /app
+COPY --from=build /src/ceilingIO/build/ceilingIOServer_artefacts/Release/ceilingIOServer /usr/local/bin/ceilingIOServer
+
+EXPOSE 8080
+
+ENTRYPOINT ["/usr/local/bin/ceilingIOServer"]
+CMD ["8080"]

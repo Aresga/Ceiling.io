@@ -1,0 +1,28 @@
+services:
+  ceilingio-base-build:
+    image: udbax/ceilingio-base:build
+
+  ceilingio-base-runtime:
+    image: udbax/ceilingio-base:runtime
+
+  ceilingio-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.cloud
+    image: ceilingio-server:prod
+    depends_on:
+      - ceilingio-base-build
+      - ceilingio-base-runtime
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 2G
+    
+networks:
+  default:
+    name: mastering_network
+    external: true
