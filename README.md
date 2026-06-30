@@ -87,6 +87,11 @@ docker compose up
 
 Runs the server on port 8080 out of the box.
 
+## Security
+
+The server has **no built-in authentication**, it's designed to run on an internal Docker network and only accept traffic from your own backend. Don't expose port 8080 to the public internet. If you need to put it behind a gateway or reverse proxy, add auth at that layer.
+
+
 ## License
 
 [AGPL-3.0](LICENSE)
