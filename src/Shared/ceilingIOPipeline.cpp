@@ -1,4 +1,5 @@
 #include "ceilingIOPipeline.h"
+#include "dsp/LufsMath.h"
 #include <lame/lame.h>
 
 #include <algorithm>
@@ -50,26 +51,11 @@ namespace ceilingIO
                 4.0f, 20.0f, 150.0f 
             }
         }};
-    } // namespace 
-
-    namespace
-    {
-        constexpr float kLufsOffset = -0.691f;
-        constexpr float kAbsoluteGateLufs = -70.0f;
-
-        // Takes raw audio and convert it into a dicibel value in LUFS, EBU R128
-        inline float meanSquareToLufs (double meanSquare)
-        {
-            if (! std::isfinite (meanSquare) || meanSquare <= 1.0e-12)
-                return -120.0f;
-            return kLufsOffset + 10.0f * std::log10 ((float) meanSquare);
-        }
-        // Does the opposite of meanSquareToLufs, converting a LUFS value back to a linear mean square value
-        inline double lufsToMeanSquare (float lufs)
-        {
-            return std::pow (10.0, (lufs - kLufsOffset) / 10.0f);
-        }
     } // namespace
+
+    // Loudness math now lives in dsp/LufsMath.h; bring the names into this
+    // namespace so existing call sites compile unchanged.
+    using dsp::meanSquareToLufs;
 
     const GenrePreset* findGenrePreset (const juce::String& name) noexcept {
         const auto normalized = name.trim().toLowerCase();

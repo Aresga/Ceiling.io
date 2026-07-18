@@ -46,7 +46,14 @@ FetchContent_MakeAvailable(crow)
 set(ceilingIO_SHARED_SOURCES
     src/Shared/MainAudioProcessor.cpp
     src/Shared/AnalysisWorker.cpp
-    src/Shared/ceilingIOPipeline.cpp)
+    src/Shared/ceilingIOPipeline.cpp
+    src/dsp/LoudnessAnalyzer.cpp
+    src/dsp/LookaheadLimiter.cpp
+    src/dsp/EqChain.cpp
+    src/atmos/AdmBwfReader.cpp
+    src/atmos/AtmosLoudnessAnalyzer.cpp
+    src/atmos/AtmosRenderer.cpp
+    src/atmos/AdmBwfWriter.cpp)
 
 
 # --- Target: CLI (Testing) ---
@@ -64,7 +71,10 @@ target_sources(ceilingIOCli PRIVATE
     src/Cli/MainCli.cpp)
 
 target_include_directories(ceilingIOCli PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/Shared)
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/Shared
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/dsp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/atmos)
 
 target_link_libraries(ceilingIOCli PRIVATE
     juce::juce_audio_processors
@@ -97,8 +107,11 @@ target_sources(ceilingIOServer PRIVATE
     src/Server/MainServer.cpp)
 
 target_include_directories(ceilingIOServer PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/include/Shared
     ${CMAKE_CURRENT_SOURCE_DIR}/include/Server
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/dsp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/atmos
 )
 
 

@@ -1,6 +1,9 @@
 #include "MasterJob.h"
 #include "MainAudioProcessor.h"
 #include "ceilingIOPipeline.h"
+#include "atmos/AdmBwfReader.h"
+#include "atmos/AtmosRenderer.h"
+#include "atmos/AtmosLoudnessAnalyzer.h"
 
 namespace server
 {
@@ -196,6 +199,72 @@ namespace server
         if (auto r = fetchStage (request.inputUrl, inputData); !r.ok)
             return fail ("fetch", r, 5);
 
+        // Rendered output — shared by the Atmos branch and the stereo path below.
+        juce::MemoryBlock outputData;
+
+        // ── Atmos branch (falls back to stereo if input is not a valid ADM BWF) ──
+        if (request.audioMode == "atmos")
+        {
+            ceilingIO::atmos::AdmBwfReader admReader;
+            if (! admReader.openFromMemory (inputData.getData(), inputData.getSize()))
+            {
+                juce::Logger::writeToLog ("[Warn]: audioMode=atmos but input is not a valid ADM BWF — falling back to stereo");
+                // fall through to the stereo pipeline below
+            }
+            else
+            {
+                store.updateAndNotify (jobId, [] (JobRecord& job) {
+                    job.progress = 25;
+                    job.stage    = "atmos-analysis";
+                    job.message  = "Analyzing Atmos bed + objects";
+                });
+
+                const ceilingIO::PlatformPreset* platform = ceilingIO::findPlatformPreset (request.platform);
+                const float targetLufs = (platform != nullptr ? platform->targetLufs : static_cast<float> (request.targetLoudness));
+                const float maxTruePeak = (platform != nullptr ? platform->maxTruePeakDbtp : -1.0f);
+
+                ceilingIO::atmos::AtmosRenderConfig cfg;
+                cfg.targetBedLufs       = targetLufs;
+                cfg.targetCompositeLufs = targetLufs;
+                cfg.maxTruePeakDbtp      = maxTruePeak;
+                cfg.linkedLimiting       = true;
+
+                ceilingIO::atmos::AtmosRenderer renderer;
+                ceilingIO::atmos::AtmosLoudnessResult atmFinal;
+                juce::String atmErr;
+
+                if (! renderer.renderToMemory (admReader, outputData, cfg, atmErr, &atmFinal))
+                    return fail ("render", { false, "DSP_RENDER_FAILED", atmErr }, 65);
+
+                const auto elapsed = static_cast<long long> (
+                    juce::roundToInt (juce::Time::getMillisecondCounterHiRes() - startedAt));
+
+                store.updateAndNotify (jobId, [&] (JobRecord& job) {
+                    job.status           = jobStatusCompleted;
+                    job.progress         = 100;
+                    job.stage            = "finalize";
+                    job.message          = "Atmos mastering completed successfully";
+                    job.processingTimeMs = elapsed;
+                    job.audioMode        = "atmos";
+                    job.outputLufs       = atmFinal.integratedLufsComposite;
+                    job.outputRms        = -120.0;
+                    job.outputPeak       = atmFinal.truePeakBedDbtp;
+                });
+
+                // Upload the rendered Atmos BWF
+                store.updateAndNotify (jobId, [] (JobRecord& job) {
+                    job.progress = 85;
+                    job.stage    = "upload";
+                    job.message  = "Uploading complete Atmos master to storage clusters";
+                });
+
+                if (auto r = uploadStage (request.outputUrl, outputData, "audio/wav"); !r.ok)
+                    return fail ("upload", r, 85);
+
+                return jobHasFinished;
+            }
+        }
+
         // ── Analysis ─────────────────────────────────────────────────────────────
         store.updateAndNotify (jobId, [] (JobRecord& job) {
             job.progress = 25;
@@ -231,7 +300,6 @@ namespace server
             job.message  = "Executing DSP mastering matrices";
         });
 
-        juce::MemoryBlock             outputData;
         ceilingIO::AnalysisResult     finalAnalysis;
 
 

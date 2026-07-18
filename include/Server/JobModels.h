@@ -28,6 +28,7 @@ namespace server
         juce::String outputFormat = "WAV";
         juce::String platform;
         juce::String genre;
+        juce::String audioMode = "stereo"; // "stereo" or "atmos"
     };
 
     struct JobRecord
@@ -55,6 +56,7 @@ namespace server
 
         juce::String platform;
         juce::String genre;
+        juce::String audioMode;
 
         juce::String updatedAt;
         juce::String createdAt;
@@ -96,7 +98,8 @@ namespace server
             + request.callbackUrl.trim() + "\n"
             + request.platform.trim() + "\n"
             + request.genre.trim() + "\n"
-            + request.outputFormat.trim();
+            + request.outputFormat.trim() + "\n"
+            + request.audioMode.trim();
 
     }
 
@@ -162,8 +165,15 @@ namespace server
         request.genre = object->hasProperty("genre") ? object->getProperty ("genre").toString().trim() : "acoustic";
         juce::Logger::writeToLog ("[Info]: Using genre: " + request.genre);
 
-        if (request.platform.length() > maxFieldLength || request.genre.length() > maxFieldLength) {
-            juce::Logger::writeToLog ("[Warning]: Platform or genre field exceeds maximum safe length");
+        request.audioMode = object->hasProperty ("audioMode")
+            ? object->getProperty ("audioMode").toString().trim().toLowerCase()
+            : "stereo";
+        if (request.audioMode != "stereo" && request.audioMode != "atmos")
+            request.audioMode = "stereo";
+        juce::Logger::writeToLog ("[Info]: Using audioMode: " + request.audioMode);
+
+        if (request.platform.length() > maxFieldLength || request.genre.length() > maxFieldLength || request.audioMode.length() > maxFieldLength) {
+            juce::Logger::writeToLog ("[Warning]: Platform, genre, or audioMode field exceeds maximum safe length");
             errorMessage = "Configuration payload strings exceed safe buffer bounds.";
             return std::nullopt;
         }
